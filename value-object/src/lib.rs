@@ -1,67 +1,61 @@
+use anyhow::bail;
+use regex::Regex;
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct FirstName(String);
-impl FromStr for FirstName {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty() {
-            Err("1文字以上である必要があります".to_string())
-        } else {
-            Ok(FirstName(s.to_string()))
-        }
-    }
-}
+use my_error::MyError;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct LastName(String);
-impl FromStr for LastName {
-    type Err = String;
+pub struct Name(String);
+impl FromStr for Name {
+    type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty() {
-            Err("1文字以上である必要があります".to_string())
+        let regex = Regex::new(r#"^[a-zA-Z]+$"#).unwrap();
+        if regex.is_match(s) {
+            Ok(Name(s.to_string()))
         } else {
-            Ok(LastName(s.to_string()))
+            bail!(MyError::type_error("許可されていない文字が使われています"))
         }
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct FullName {
-    first_name: FirstName,
-    last_name: LastName,
+    first_name: Name,
+    last_name: Name,
 }
 
 impl FullName {
-    pub fn new(first_name: FirstName, last_name: LastName) -> FullName {
+    pub fn new(first_name: Name, last_name: Name) -> FullName {
         FullName {
             first_name,
             last_name,
         }
     }
 
-    pub fn first_name(&self) -> &FirstName {
+    pub fn first_name(&self) -> &Name {
         &self.first_name
     }
 
-    pub fn last_name(&self) -> &LastName {
+    pub fn last_name(&self) -> &Name {
         &self.last_name
     }
 }
 
 #[test]
 fn test_equality_of_full_name() {
+    assert!("".parse::<Name>().is_err());
+
     let name_a = FullName::new(
-        "masanobu".parse::<FirstName>().unwrap(),
-        "naruse".parse::<LastName>().unwrap(),
+        "masanobu".parse::<Name>().unwrap(),
+        "naruse".parse::<Name>().unwrap(),
     );
     let name_b = FullName::new(
-        "john".parse::<FirstName>().unwrap(),
-        "smith".parse::<LastName>().unwrap(),
+        "john".parse::<Name>().unwrap(),
+        "smith".parse::<Name>().unwrap(),
     );
     let name_c = FullName::new(
-        "masanobu".parse::<FirstName>().unwrap(),
-        "naruse".parse::<LastName>().unwrap(),
+        "masanobu".parse::<Name>().unwrap(),
+        "naruse".parse::<Name>().unwrap(),
     );
 
     assert_ne!(name_a, name_b);

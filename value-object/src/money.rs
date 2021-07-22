@@ -1,39 +1,37 @@
 use rust_decimal::Decimal;
-use std::ops::Add;
+use std::{marker::PhantomData, ops::Add};
 
-struct Money {
+struct Money<T: MoneyTrait> {
     amount: Decimal,
-    currency: String,
+    currency: PhantomData<T>,
 }
 
-impl Money {
-    fn new(amount: Decimal, currency: String) -> Self {
-        if currency.is_empty() {
-            panic!("currency is empty")
-        } else {
-            Self { amount, currency }
+impl<T: MoneyTrait> Money<T> {
+    fn new(amount: Decimal) -> Self {
+        Self {
+            amount,
+            currency: PhantomData::<T>,
         }
     }
 }
 
-impl Add for Money {
+impl<T: MoneyTrait> Add for Money<T> {
     type Output = Self;
-    fn add(self, other: Money) -> Self::Output {
-        if self.currency != other.currency {
-            panic!(
-                "invalid currency. self: {}, other: {}",
-                self.currency, other.currency
-            )
-        }
-        let new_amount = self.amount + other.amount;
-        Self::new(new_amount, self.currency)
+    fn add(self, other: Self) -> Self::Output {
+        Self::new(self.amount + other.amount)
     }
 }
+
+trait MoneyTrait {}
+enum JPY {}
+impl MoneyTrait for JPY {}
+enum USD {}
+impl MoneyTrait for USD {}
 
 #[test]
 fn test_adding_money() {
-    let my_money = Money::new(Decimal::new(1000, 10), "JPY".to_string());
-    let allowance = Money::new(Decimal::new(3000, 10), "JPY".to_string());
+    let my_money = Money::<JPY>::new(Decimal::new(1000, 10));
+    let allowance = Money::<JPY>::new(Decimal::new(3000, 10));
     let result = my_money + allowance;
     assert_eq!(Decimal::new(4000, 10), result.amount);
 }
